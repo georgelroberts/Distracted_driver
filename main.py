@@ -19,7 +19,22 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 
 def main():
-    Explore_Data(print_stats=False, show_ims=True)
+    Explore_Data(print_stats=False, show_ims=False)
+
+
+class Load_Input(object):
+    def __init__(repickle=False):
+        self.save_file = os.path.join(DATA_DIR, 'input.pkl')
+        if not os.path.exists(self.save_file) or repickle:
+            self.build_input(self)
+        else:
+            self.load_input(self)
+
+    def build_input(self):
+        pass
+
+    def load_input(self):
+        pass
 
 
 class Explore_Data(object):
