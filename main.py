@@ -17,9 +17,9 @@ import matplotlib.image as mpimg
 CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
 
+
 def main():
     Explore_Data(print_stats=False, show_ims=True)
-
 
 
 class Explore_Data(object):
@@ -47,7 +47,7 @@ class Explore_Data(object):
         train_folds = os.listdir(train_dir)
         fig, axes = plt.subplots(2, 5, figsize=(20, 10))
         for ax, train_set in zip(axes.reshape(-1), train_folds):
-            im_paths  = os.listdir(os.path.join(train_dir, train_set))
+            im_paths = os.listdir(os.path.join(train_dir, train_set))
             im_path = random.choice(im_paths)
             img = mpimg.imread(os.path.join(train_dir, train_set, im_path))
             ax.set_title("Train set: {}".format(train_set))
@@ -58,4 +58,3 @@ class Explore_Data(object):
 
 if __name__ == '__main__':
     main()
-
