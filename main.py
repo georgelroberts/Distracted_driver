@@ -13,13 +13,14 @@ matplotlib.rcParams['figure.dpi'] = 200
 import matplotlib.pyplot as plt
 import random
 import matplotlib.image as mpimg
+from PIL import Image
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
 
 
 def main():
-    Explore_Data(print_stats=False, show_ims=False)
+    Explore_Data(print_stats=True, show_ims=False)
 
 
 class Load_Input(object):
@@ -41,6 +42,7 @@ class Explore_Data(object):
     def __init__(self, print_stats=False, show_ims=False):
         if print_stats:
             self.count_test_train()
+            self.unique_im_sizes()
         if show_ims:
             self.show_class_examples()
 
@@ -56,6 +58,20 @@ class Explore_Data(object):
 
         test_lst = os.listdir(os.path.join(DATA_DIR, 'test'))
         print("No test images: {}".format(len(test_lst)))
+
+    def unique_im_sizes(self):
+        train_dir = os.path.join(DATA_DIR, 'train')
+        train_folds = os.listdir(train_dir)
+        sizes = set()
+        for fold in train_folds:
+            class_dir = os.path.join(train_dir, fold)
+            im_paths = os.listdir(class_dir)
+            for im_path in im_paths:
+                im = Image.open(os.path.join(class_dir, im_path))
+                width, height = im.size
+                channels = len(im.mode)
+                sizes.add((width, height, channels))
+        print("Unique image sizes: {}".format(sizes))
 
     def show_class_examples(self):
         train_dir = os.path.join(DATA_DIR, 'train')
