@@ -4,6 +4,11 @@ Date: May 2019
 
 About: Computer vision project to detect when a driver is distracted
 at the wheel.
+
+TODO: Shuffle train set.
+TODO: Split train into train and CV.
+TODO: Train and simple CNN.
+TODO: Built a dataframe/text document to log all previous scores
 '''
 
 import os
@@ -24,6 +29,7 @@ DATA_DIR = os.path.join(CDIR, 'data')
 def main():
     Explore_Data(print_stats=False, show_ims=False)
     Load_Data('train')
+    Load_Data('test')
 
 
 class Load_Data(object):
@@ -36,10 +42,10 @@ class Load_Data(object):
             self.load_input()
 
     def build_input(self):
+        self.data = []
         if self.dataset == 'train':
             train_dir = os.path.join(DATA_DIR, 'train')
             train_folds = os.listdir(train_dir)
-            data = []
             for fold in train_folds:
                 print(fold)
                 label = self.get_label(fold)
@@ -48,21 +54,21 @@ class Load_Data(object):
                 for im_path in im_paths:
                     im = Image.open(os.path.join(class_dir, im_path))
                     im = self.compress_im(im)
-                    data.append([np.array(im), label])
+                    self.data.append([np.array(im), label])
 
         elif self.dataset == 'test':
             test_lst = os.listdir(os.path.join(DATA_DIR, 'test'))
-            data = []
-            for test_file in test_lst:
+            for ii, test_file in enumerate(test_lst):
                 fpath = os.path.join(DATA_DIR, 'test', test_file)
                 im = Image.open(fpath)
                 im = self.compress_im(im)
-                data.append(np.array(im))
+                self.data.append(np.array(im))
         with open(self.file, 'wb') as f:
-            pickle.dump(data, f, protocol=2)
+            pickle.dump(self.data, f, protocol=2)
 
     def load_input(self):
-        pass
+        with open(self.file, 'r') as f:
+            self.data = pickle.load(f)
 
     @staticmethod
     def get_label(folder):
@@ -74,7 +80,7 @@ class Load_Data(object):
     @staticmethod
     def compress_im(im):
         gs_im = im.convert(mode='L')
-        gs_im.thumbnail((100,100))
+        gs_im.thumbnail((100, 100))
         return gs_im
 
 
