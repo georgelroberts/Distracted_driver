@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import random
 import matplotlib.image as mpimg
 from PIL import Image
+import pickle
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
@@ -38,24 +39,43 @@ class Load_Data(object):
         if self.dataset == 'train':
             train_dir = os.path.join(DATA_DIR, 'train')
             train_folds = os.listdir(train_dir)
-            train_data = []
+            data = []
             for fold in train_folds:
+                print(fold)
+                label = self.get_label(fold)
                 class_dir = os.path.join(train_dir, fold)
                 im_paths = os.listdir(class_dir)
                 for im_path in im_paths:
                     im = Image.open(os.path.join(class_dir, im_path))
-                    train_data.append([np.array(im), fold])
+                    im = self.compress_im(im)
+                    data.append([np.array(im), label])
 
         elif self.dataset == 'test':
             test_lst = os.listdir(os.path.join(DATA_DIR, 'test'))
-            test_data = []
+            data = []
             for test_file in test_lst:
                 fpath = os.path.join(DATA_DIR, 'test', test_file)
                 im = Image.open(fpath)
-                test_data.append(np.array(im))
+                im = self.compress_im(im)
+                data.append(np.array(im))
+        with open(self.file, 'wb') as f:
+            pickle.dump(data, f, protocol=2)
 
     def load_input(self):
         pass
+
+    @staticmethod
+    def get_label(folder):
+        arr = np.zeros(10)
+        label_no = int(folder[1])
+        arr[label_no] = 1
+        return arr
+
+    @staticmethod
+    def compress_im(im):
+        gs_im = im.convert(mode='L')
+        gs_im.thumbnail((100,100))
+        return gs_im
 
 
 class Explore_Data(object):
