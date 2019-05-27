@@ -58,7 +58,10 @@ class Load_Data(object):
 
         elif self.dataset == 'test':
             test_lst = os.listdir(os.path.join(DATA_DIR, 'test'))
+            no_test = len(test_lst)
             for ii, test_file in enumerate(test_lst):
+                if ii % 500 == 0:
+                    print("{:.1f}% complete".format(ii / no_test * 100))
                 fpath = os.path.join(DATA_DIR, 'test', test_file)
                 im = Image.open(fpath)
                 im = self.compress_im(im)
@@ -67,7 +70,7 @@ class Load_Data(object):
             pickle.dump(self.data, f, protocol=2)
 
     def load_input(self):
-        with open(self.file, 'r') as f:
+        with open(self.file, 'rb') as f:
             self.data = pickle.load(f)
 
     @staticmethod
