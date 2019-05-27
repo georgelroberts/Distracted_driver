@@ -9,6 +9,7 @@ at the wheel.
 import os
 import numpy
 import matplotlib
+import numpy as np
 matplotlib.rcParams['figure.dpi'] = 200
 import matplotlib.pyplot as plt
 import random
@@ -20,19 +21,38 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 
 def main():
-    Explore_Data(print_stats=True, show_ims=False)
+    Explore_Data(print_stats=False, show_ims=False)
+    Load_Data('train')
 
 
-class Load_Input(object):
-    def __init__(repickle=False):
-        self.save_file = os.path.join(DATA_DIR, 'input.pkl')
-        if not os.path.exists(self.save_file) or repickle:
-            self.build_input(self)
+class Load_Data(object):
+    def __init__(self, data, repickle=False):
+        self.dataset = data
+        self.file = os.path.join(DATA_DIR, '{}_data.pkl'.format(data))
+        if not os.path.exists(self.file) or repickle:
+            self.build_input()
         else:
-            self.load_input(self)
+            self.load_input()
 
     def build_input(self):
-        pass
+        if self.dataset == 'train':
+            train_dir = os.path.join(DATA_DIR, 'train')
+            train_folds = os.listdir(train_dir)
+            train_data = []
+            for fold in train_folds:
+                class_dir = os.path.join(train_dir, fold)
+                im_paths = os.listdir(class_dir)
+                for im_path in im_paths:
+                    im = Image.open(os.path.join(class_dir, im_path))
+                    train_data.append([np.array(im), fold])
+
+        elif self.dataset == 'test':
+            test_lst = os.listdir(os.path.join(DATA_DIR, 'test'))
+            test_data = []
+            for test_file in test_lst:
+                fpath = os.path.join(DATA_DIR, 'test', test_file)
+                im = Image.open(fpath)
+                test_data.append(np.array(im))
 
     def load_input(self):
         pass
