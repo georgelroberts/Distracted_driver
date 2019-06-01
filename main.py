@@ -21,6 +21,9 @@ import matplotlib.image as mpimg
 from PIL import Image
 import pickle
 from sklearn.model_selection import train_test_split
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import Activation, Dropout, Flatten, Dense
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
@@ -31,9 +34,48 @@ def main():
     train_inst = Load_Data('train')
     data = train_inst.data
     np.random.shuffle(data)
-    data_X, data_y = data[:, 0], data[:, 1]
+
+    data_X, data_y = np.array(list(data[:, 0])), np.array(list(data[:, 1]))
+    shape_X = list(data_X.shape)
+    shape_X.append(1)
+    data_X = data_X.reshape(shape_X)
+
     train_X, cv_X, train_y, cv_y = train_test_split(
             data_X, data_y, test_size=0.33, random_state=42)
+
+    del data_X, data_y, data
+    model = modelling()
+
+    model.fit(train_X, train_y, epochs=5, verbose=1, batch_size=128,
+              validation_data=(cv_X, cv_y))
+
+
+def modelling():
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), input_shape=(75, 100,1 )))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Conv2D(32, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Conv2D(64, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Flatten())
+    model.add(Dense(64))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(10))
+    model.add(Activation('softmax'))
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer='rmsprop',
+                  metrics=['accuracy'])
+    return model
+
 
 class Load_Data(object):
     def __init__(self, data, repickle=False):
