@@ -5,7 +5,6 @@ Date: May 2019
 About: Computer vision project to detect when a driver is distracted
 at the wheel.
 
-TODO: Shuffle train set.
 TODO: Split train into train and CV.
 TODO: Train a simple CNN.
 TODO: Built a dataframe/text document to log all previous scores
@@ -21,6 +20,7 @@ import random
 import matplotlib.image as mpimg
 from PIL import Image
 import pickle
+from sklearn.model_selection import train_test_split
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
@@ -29,9 +29,11 @@ DATA_DIR = os.path.join(CDIR, 'data')
 def main():
     Explore_Data(print_stats=False, show_ims=False)
     train_inst = Load_Data('train')
-    train = train_inst.data
-    np.random.shuffle(train)
-
+    data = train_inst.data
+    np.random.shuffle(data)
+    data_X, data_y = data[:, 0], data[:, 1]
+    train_X, cv_X, train_y, cv_y = train_test_split(
+            data_X, data_y, test_size=0.33, random_state=42)
 
 class Load_Data(object):
     def __init__(self, data, repickle=False):
