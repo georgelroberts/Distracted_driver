@@ -5,8 +5,6 @@ Date: May 2019
 About: Computer vision project to detect when a driver is distracted
 at the wheel.
 
-TODO: Split train into train and CV.
-TODO: Train a simple CNN.
 TODO: Built a dataframe/text document to log all previous scores
 '''
 
@@ -24,16 +22,17 @@ from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
+import ujson
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
 
 
 def main():
+
     Explore_Data(print_stats=False, show_ims=False)
     train_inst = Load_Data('train')
     data_X, data_y = train_inst.data_X, train_inst.data_y
-
 
     train_X, cv_X, train_y, cv_y = train_test_split(
             data_X, data_y, test_size=0.33, random_state=42)
@@ -41,13 +40,32 @@ def main():
     del data_X, data_y
     model = modelling()
 
-    model.fit(train_X[:512,:,:,:], train_y[:512,:], epochs=5, verbose=1,
-              batch_size=128, validation_data=(cv_X, cv_y))
+    model.fit(train_X[:, :, :, :], train_y[:, :], epochs=5, verbose=1,
+              batch_size=64, validation_data=(cv_X, cv_y))
+
+    for i in range(10):
+        show_example_prediction(model, cv_X, cv_y)
+
+
+def show_example_prediction(model, cv_X, cv_y):
+    with open(os.path.join(CDIR, 'classes.json'), 'r') as f:
+        class_labels = ujson.load(f)
+    idx = np.random.choice(np.arange(len(cv_X)))
+    pred = model.predict(cv_X[[idx], :, :, :])
+    pred_cls = np.argmax(pred)
+    pred_cls = class_labels[str(pred_cls)]
+    actual_cls = np.argmax(cv_y[idx])
+    actual_cls = class_labels[str(actual_cls)]
+    fig, ax = plt.subplots()
+    ax.set_title("Predicted: {}, Actual: {}".format(pred_cls, actual_cls))
+    ax.imshow(np.squeeze(cv_X[idx, :, :, :]), cmap='gray')
+    plt.tight_layout()
+    plt.show()
 
 
 def modelling():
     model = Sequential()
-    model.add(Conv2D(32, (3, 3), input_shape=(75, 100,1 )))
+    model.add(Conv2D(32, (3, 3), input_shape=(75, 100, 1)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
