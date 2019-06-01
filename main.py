@@ -7,7 +7,7 @@ at the wheel.
 
 TODO: Shuffle train set.
 TODO: Split train into train and CV.
-TODO: Train and simple CNN.
+TODO: Train a simple CNN.
 TODO: Built a dataframe/text document to log all previous scores
 '''
 
@@ -28,8 +28,9 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 def main():
     Explore_Data(print_stats=False, show_ims=False)
-    Load_Data('train')
-    Load_Data('test')
+    train_inst = Load_Data('train')
+    train = train_inst.data
+    np.random.shuffle(train)
 
 
 class Load_Data(object):
@@ -66,12 +67,14 @@ class Load_Data(object):
                 im = Image.open(fpath)
                 im = self.compress_im(im)
                 self.data.append(np.array(im))
+        self.data = np.array(self.data)
         with open(self.file, 'wb') as f:
             pickle.dump(self.data, f, protocol=2)
 
     def load_input(self):
         with open(self.file, 'rb') as f:
             self.data = pickle.load(f)
+        self.data = np.array(self.data)
 
     @staticmethod
     def get_label(folder):
