@@ -32,22 +32,17 @@ DATA_DIR = os.path.join(CDIR, 'data')
 def main():
     Explore_Data(print_stats=False, show_ims=False)
     train_inst = Load_Data('train')
-    data = train_inst.data
-    np.random.shuffle(data)
+    data_X, data_y = train_inst.data_X, train_inst.data_y
 
-    data_X, data_y = np.array(list(data[:, 0])), np.array(list(data[:, 1]))
-    shape_X = list(data_X.shape)
-    shape_X.append(1)
-    data_X = data_X.reshape(shape_X)
 
     train_X, cv_X, train_y, cv_y = train_test_split(
             data_X, data_y, test_size=0.33, random_state=42)
 
-    del data_X, data_y, data
+    del data_X, data_y
     model = modelling()
 
-    model.fit(train_X, train_y, epochs=5, verbose=1, batch_size=128,
-              validation_data=(cv_X, cv_y))
+    model.fit(train_X[:512,:,:,:], train_y[:512,:], epochs=5, verbose=1,
+              batch_size=128, validation_data=(cv_X, cv_y))
 
 
 def modelling():
@@ -83,8 +78,10 @@ class Load_Data(object):
         self.file = os.path.join(DATA_DIR, '{}_data.pkl'.format(data))
         if not os.path.exists(self.file) or repickle:
             self.build_input()
+            self.manipulate_input()
         else:
             self.load_input()
+            self.manipulate_input()
 
     def build_input(self):
         self.data = []
@@ -119,6 +116,14 @@ class Load_Data(object):
         with open(self.file, 'rb') as f:
             self.data = pickle.load(f)
         self.data = np.array(self.data)
+
+    def manipulate_input(self):
+        np.random.shuffle(self.data)
+        self.data_X = np.array(list(self.data[:, 0]))
+        self.data_y = np.array(list(self.data[:, 1]))
+        shape_X = list(self.data_X.shape)
+        shape_X.append(1)
+        self.data_X = self.data_X.reshape(shape_X)
 
     @staticmethod
     def get_label(folder):
