@@ -22,6 +22,7 @@ from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
+from keras.models import load_model
 import ujson
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
@@ -29,7 +30,6 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 
 def main():
-
     Explore_Data(print_stats=False, show_ims=False)
     train_inst = Load_Data('train')
     data_X, data_y = train_inst.data_X, train_inst.data_y
@@ -39,9 +39,11 @@ def main():
 
     del data_X, data_y
     model = modelling()
-
-    model.fit(train_X[:, :, :, :], train_y[:, :], epochs=5, verbose=1,
-              batch_size=64, validation_data=(cv_X, cv_y))
+#
+#    model.fit(train_X[:, :, :, :], train_y[:, :], epochs=5, verbose=1,
+#              batch_size=64, validation_data=(cv_X, cv_y))
+    mod_fpath = os.path.join(CDIR, 'model1.h5')
+    model = load_model(mod_fpath)
 
     for i in range(10):
         show_example_prediction(model, cv_X, cv_y)
@@ -52,6 +54,7 @@ def show_example_prediction(model, cv_X, cv_y):
         class_labels = ujson.load(f)
     idx = np.random.choice(np.arange(len(cv_X)))
     pred = model.predict(cv_X[[idx], :, :, :])
+    print(pred)
     pred_cls = np.argmax(pred)
     pred_cls = class_labels[str(pred_cls)]
     actual_cls = np.argmax(cv_y[idx])
