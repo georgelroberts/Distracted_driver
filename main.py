@@ -11,6 +11,7 @@ TODO: Build a dataframe/text document to log all previous scores
 import os
 import matplotlib
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import random
 import matplotlib.image as mpimg
@@ -54,12 +55,20 @@ def main(refit=False, plot_egs=False, cv_scores=False):
         pred_log_loss, pred_accuracy = cv_score(model, cv_X, cv_y)
         print("CV log loss: {:.3f}\nCV accuracy: {:.3f}".format(pred_log_loss,
                                                                 pred_accuracy))
+    prepare_submission(model, test)
 
 
 def prepare_submission(model, test):
     test_inst = Load_Data('test')
-
-
+    test_data = test_inst.data
+    sample_sub = pd.read_csv(os.path.join(CDIR, 'sample_submission.csv'))
+    preds = model.predict(test_data)
+    preds = np.clip(preds, 0.01, 0.99)
+    sub = pd.DataFrame(data=preds,
+                       index=sample_sub['img'],
+                       columns=['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'])
+    sub.reset_index(inplace=True)
+    sub.to_csv(os.path.join(CDIR, 'real_sub.csv'), index=False)
 
 def cv_score(model, cv_X, cv_y):
     preds = model.predict(cv_X)
