@@ -22,6 +22,8 @@ from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import load_model
+from keras.optimizers import SGD
+
 import ujson
 from sklearn.metrics import log_loss, accuracy_score
 matplotlib.rcParams['figure.dpi'] = 200
@@ -32,18 +34,20 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 def main(refit=False, plot_egs=False, cv_scores=False):
     Explore_Data(print_stats=False, show_ims=False)
-    train_inst = Load_Data('train')
+    train_inst = Load_Data('train', repickle=True)
     data_X, data_y = train_inst.data_X, train_inst.data_y
 
     train_X, cv_X, train_y, cv_y = train_test_split(
             data_X, data_y, test_size=0.33, random_state=42)
+    train_X = train_X / 255
+    cv_X = cv_X / 255
 
     del data_X, data_y
     mod_fpath = os.path.join(CDIR, 'model1.h5')
     if refit or not os.path.exists(mod_fpath):
-        model = modelling()
-        model.fit(train_X[:, :, :, :], train_y[:, :], epochs=5, verbose=1,
-                  batch_size=64, validation_data=(cv_X, cv_y))
+        model = modelling(train_X[0].shape)
+        model.fit(train_X[:, :, :, :], train_y[:, :], epochs=9, verbose=1,
+                  batch_size=32, validation_data=(cv_X, cv_y))
     else:
         model = load_model(mod_fpath)
 
@@ -55,12 +59,13 @@ def main(refit=False, plot_egs=False, cv_scores=False):
         pred_log_loss, pred_accuracy = cv_score(model, cv_X, cv_y)
         print("CV log loss: {:.3f}\nCV accuracy: {:.3f}".format(pred_log_loss,
                                                                 pred_accuracy))
-    prepare_submission(model, test)
+    prepare_submission(model)
 
 
-def prepare_submission(model, test):
-    test_inst = Load_Data('test')
+def prepare_submission(model):
+    test_inst = Load_Data('test', repickle=True)
     test_data = test_inst.data
+    test_data = test_data / 255
     sample_sub = pd.read_csv(os.path.join(CDIR, 'sample_submission.csv'))
     preds = model.predict(test_data)
     preds = np.clip(preds, 0.01, 0.99)
@@ -69,6 +74,7 @@ def prepare_submission(model, test):
                        columns=['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'])
     sub.reset_index(inplace=True)
     sub.to_csv(os.path.join(CDIR, 'real_sub.csv'), index=False)
+
 
 def cv_score(model, cv_X, cv_y):
     preds = model.predict(cv_X)
@@ -96,19 +102,22 @@ def show_example_prediction(model, cv_X, cv_y):
     plt.show()
 
 
-def modelling():
+def modelling(shape):
     model = Sequential()
-    model.add(Conv2D(32, (3, 3), input_shape=(75, 100, 1)))
+    model.add(Conv2D(32, (3, 3), input_shape=shape))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
+#    model.add(Dropout(0.5))
 
     model.add(Conv2D(32, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
+#    model.add(Dropout(0.5))
 
-    model.add(Conv2D(64, (3, 3)))
+    model.add(Conv2D(32, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
+#    model.add(Dropout(0.5))
 
     model.add(Flatten())
     model.add(Dense(64))
@@ -117,8 +126,8 @@ def modelling():
     model.add(Dense(10))
     model.add(Activation('softmax'))
 
-    model.compile(loss='binary_crossentropy',
-                  optimizer='rmsprop',
+    model.compile(loss='categorical_crossentropy',
+                  optimizer='adam',
                   metrics=['accuracy'])
     return model
 
@@ -190,7 +199,7 @@ class Load_Data(object):
     @staticmethod
     def compress_im(im):
         gs_im = im.convert(mode='L')
-        gs_im.thumbnail((100, 100))
+        gs_im.thumbnail((128, 128))
         return gs_im
 
 
@@ -244,4 +253,4 @@ class Explore_Data(object):
 
 
 if __name__ == '__main__':
-    main()
+    main(refit=True, plot_egs=False)
