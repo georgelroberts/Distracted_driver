@@ -24,6 +24,7 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import load_model
 import ujson
+from sklearn.metrics import log_loss, accuracy_score
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
@@ -39,7 +40,7 @@ def main(refit=False, plot_egs=False):
 
     del data_X, data_y
     mod_fpath = os.path.join(CDIR, 'model1.h5')
-    if repickle or not os.path.exists(mod_fpath):
+    if refit or not os.path.exists(mod_fpath):
         model = modelling()
         model.fit(train_X[:, :, :, :], train_y[:, :], epochs=5, verbose=1,
                   batch_size=64, validation_data=(cv_X, cv_y))
@@ -49,6 +50,19 @@ def main(refit=False, plot_egs=False):
     if plot_egs:
         for i in range(10):
             show_example_prediction(model, cv_X, cv_y)
+
+    pred_log_loss, pred_accuracy = cv_score(model, cv_X, cv_y)
+    print("CV log loss: {}\n CV accuracy: {}".format(pred_log_loss,
+                                                     pred_accuracy))
+
+
+def cv_score(model, cv_X, cv_y):
+    preds = model.predict(cv_X)
+    pred_log_loss = log_loss(cv_y, preds)
+    pred_args = np.argmax(preds, axis=1)
+    real_args = np.argmax(cv_y, axis=1)
+    pred_accuracy = accuracy_score(real_args, pred_args)
+    return pred_log_loss, pred_accuracy
 
 
 def show_example_prediction(model, cv_X, cv_y):
