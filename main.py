@@ -5,14 +5,12 @@ Date: May 2019
 About: Computer vision project to detect when a driver is distracted
 at the wheel.
 
-TODO: Built a dataframe/text document to log all previous scores
+TODO: Build a dataframe/text document to log all previous scores
 '''
 
 import os
-import numpy
 import matplotlib
 import numpy as np
-matplotlib.rcParams['figure.dpi'] = 200
 import matplotlib.pyplot as plt
 import random
 import matplotlib.image as mpimg
@@ -25,6 +23,7 @@ from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import load_model
 import ujson
 from sklearn.metrics import log_loss, accuracy_score
+matplotlib.rcParams['figure.dpi'] = 200
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
@@ -52,8 +51,8 @@ def main(refit=False, plot_egs=False):
             show_example_prediction(model, cv_X, cv_y)
 
     pred_log_loss, pred_accuracy = cv_score(model, cv_X, cv_y)
-    print("CV log loss: {}\n CV accuracy: {}".format(pred_log_loss,
-                                                     pred_accuracy))
+    print("CV log loss: {:.2f}\nCV accuracy: {:.2f}".format(pred_log_loss,
+                                                            pred_accuracy))
 
 
 def cv_score(model, cv_X, cv_y):
