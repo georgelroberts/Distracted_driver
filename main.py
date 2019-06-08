@@ -29,7 +29,7 @@ CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
 
 
-def main(refit=False, plot_egs=False):
+def main(refit=False, plot_egs=False, cv_scores=False):
     Explore_Data(print_stats=False, show_ims=False)
     train_inst = Load_Data('train')
     data_X, data_y = train_inst.data_X, train_inst.data_y
@@ -50,9 +50,15 @@ def main(refit=False, plot_egs=False):
         for i in range(10):
             show_example_prediction(model, cv_X, cv_y)
 
-    pred_log_loss, pred_accuracy = cv_score(model, cv_X, cv_y)
-    print("CV log loss: {:.2f}\nCV accuracy: {:.2f}".format(pred_log_loss,
-                                                            pred_accuracy))
+    if cv_scores:
+        pred_log_loss, pred_accuracy = cv_score(model, cv_X, cv_y)
+        print("CV log loss: {:.3f}\nCV accuracy: {:.3f}".format(pred_log_loss,
+                                                                pred_accuracy))
+
+
+def prepare_submission(model, test):
+    test_inst = Load_Data('test')
+
 
 
 def cv_score(model, cv_X, cv_y):
@@ -114,10 +120,9 @@ class Load_Data(object):
         self.file = os.path.join(DATA_DIR, '{}_data.pkl'.format(data))
         if not os.path.exists(self.file) or repickle:
             self.build_input()
-            self.manipulate_input()
         else:
             self.load_input()
-            self.manipulate_input()
+        self.manipulate_input()
 
     def build_input(self):
         self.data = []
@@ -154,12 +159,17 @@ class Load_Data(object):
         self.data = np.array(self.data)
 
     def manipulate_input(self):
-        np.random.shuffle(self.data)
-        self.data_X = np.array(list(self.data[:, 0]))
-        self.data_y = np.array(list(self.data[:, 1]))
-        shape_X = list(self.data_X.shape)
-        shape_X.append(1)
-        self.data_X = self.data_X.reshape(shape_X)
+        if self.dataset == 'train':
+            np.random.shuffle(self.data)
+            self.data_X = np.array(list(self.data[:, 0]))
+            self.data_y = np.array(list(self.data[:, 1]))
+            shape_X = list(self.data_X.shape)
+            shape_X.append(1)
+            self.data_X = self.data_X.reshape(shape_X)
+        else:
+            shape_X = list(self.data.shape)
+            shape_X.append(1)
+            self.data = self.data.reshape(shape_X)
 
     @staticmethod
     def get_label(folder):
