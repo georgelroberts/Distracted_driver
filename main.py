@@ -29,7 +29,7 @@ CDIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(CDIR, 'data')
 
 
-def main():
+def main(refit=False, plot_egs=False):
     Explore_Data(print_stats=False, show_ims=False)
     train_inst = Load_Data('train')
     data_X, data_y = train_inst.data_X, train_inst.data_y
@@ -38,15 +38,17 @@ def main():
             data_X, data_y, test_size=0.33, random_state=42)
 
     del data_X, data_y
-    model = modelling()
-#
-#    model.fit(train_X[:, :, :, :], train_y[:, :], epochs=5, verbose=1,
-#              batch_size=64, validation_data=(cv_X, cv_y))
     mod_fpath = os.path.join(CDIR, 'model1.h5')
-    model = load_model(mod_fpath)
+    if repickle or not os.path.exists(mod_fpath):
+        model = modelling()
+        model.fit(train_X[:, :, :, :], train_y[:, :], epochs=5, verbose=1,
+                  batch_size=64, validation_data=(cv_X, cv_y))
+    else:
+        model = load_model(mod_fpath)
 
-    for i in range(10):
-        show_example_prediction(model, cv_X, cv_y)
+    if plot_egs:
+        for i in range(10):
+            show_example_prediction(model, cv_X, cv_y)
 
 
 def show_example_prediction(model, cv_X, cv_y):
