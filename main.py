@@ -34,7 +34,7 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 def main(refit=False, plot_egs=False, cv_scores=False):
     Explore_Data(print_stats=False, show_ims=False)
-    train_inst = Load_Data('train', repickle=True)
+    train_inst = Load_Data('train', repickle=False)
     data_X, data_y = train_inst.data_X, train_inst.data_y
 
     train_X, cv_X, train_y, cv_y = train_test_split(
@@ -48,6 +48,7 @@ def main(refit=False, plot_egs=False, cv_scores=False):
         model = modelling(train_X[0].shape)
         model.fit(train_X[:, :, :, :], train_y[:, :], epochs=9, verbose=1,
                   batch_size=32, validation_data=(cv_X, cv_y))
+        model.save(mod_fpath)
     else:
         model = load_model(mod_fpath)
 
@@ -63,7 +64,7 @@ def main(refit=False, plot_egs=False, cv_scores=False):
 
 
 def prepare_submission(model):
-    test_inst = Load_Data('test', repickle=True)
+    test_inst = Load_Data('test', repickle=False)
     test_data = test_inst.data
     test_data = test_data / 255
     sample_sub = pd.read_csv(os.path.join(CDIR, 'sample_submission.csv'))
@@ -107,17 +108,22 @@ def modelling(shape):
     model.add(Conv2D(32, (3, 3), input_shape=shape))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-#    model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Conv2D(32, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-#    model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
 
     model.add(Conv2D(32, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-#    model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
+
+    model.add(Conv2D(32, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
 
     model.add(Flatten())
     model.add(Dense(64))
