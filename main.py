@@ -23,6 +23,7 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import load_model
 from keras.optimizers import SGD
+from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
 import ujson
 from sklearn.metrics import log_loss, accuracy_score
@@ -43,14 +44,22 @@ def main(refit=False, plot_egs=False, cv_scores=False):
     cv_X = cv_X / 255
 
     del data_X, data_y
-    mod_fpath = os.path.join(CDIR, 'model1.h5')
+#    mod_fpath = os.path.join(CDIR, 'model1.h5')
+    mod_fpath = '.mdl_wts.hdf5'
+    model = modelling(train_X[0].shape)
     if refit or not os.path.exists(mod_fpath):
-        model = modelling(train_X[0].shape)
-        model.fit(train_X[:, :, :, :], train_y[:, :], epochs=9, verbose=1,
-                  batch_size=32, validation_data=(cv_X, cv_y))
-        model.save(mod_fpath)
-    else:
-        model = load_model(mod_fpath)
+        earlyStopping = EarlyStopping(monitor='val_loss', patience=10,
+                                      verbose=0, mode='min')
+        mcp_save = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True,
+                                   monitor='val_loss', mode='min')
+        reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+                                           patience=7, verbose=1, epsilon=1e-4,
+                                           mode='min')
+        model.fit(train_X[:, :, :, :], train_y[:, :], epochs=30, verbose=1,
+                  batch_size=32,
+                  callbacks=[earlyStopping, mcp_save, reduce_lr_loss],
+                  validation_data=(cv_X, cv_y))
+    model.load_weights(filepath=mod_fpath)
 
     if plot_egs:
         for i in range(10):
