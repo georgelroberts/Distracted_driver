@@ -59,7 +59,7 @@ def main(refit=False, plot_egs=False, cv_scores=False):
                   batch_size=32,
                   callbacks=[earlyStopping, mcp_save, reduce_lr_loss],
                   validation_data=(cv_X, cv_y))
-    model.load_weights(filepath=mod_fpath)
+    model.load_weights(filepath=mod_fpath, by_name=True)
 
     if plot_egs:
         for i in range(10):
@@ -73,12 +73,12 @@ def main(refit=False, plot_egs=False, cv_scores=False):
 
 
 def prepare_submission(model):
+    print("Preparing submission")
     test_inst = Load_Data('test', repickle=False)
     test_data = test_inst.data
     test_data = test_data / 255
     sample_sub = pd.read_csv(os.path.join(CDIR, 'sample_submission.csv'))
     preds = model.predict(test_data)
-    preds = np.clip(preds, 0.01, 0.99)
     sub = pd.DataFrame(data=preds,
                        index=sample_sub['img'],
                        columns=['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'])
@@ -129,10 +129,10 @@ def modelling(shape):
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.5))
 
-    model.add(Conv2D(32, (3, 3)))
-    model.add(Activation('relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.5))
+#    model.add(Conv2D(32, (3, 3)))
+#    model.add(Activation('relu'))
+#    model.add(MaxPooling2D(pool_size=(2, 2)))
+#    model.add(Dropout(0.5))
 
     model.add(Flatten())
     model.add(Dense(64))
