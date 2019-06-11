@@ -15,6 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 import matplotlib.image as mpimg
+import pdb
 from PIL import Image
 import pickle
 from sklearn.model_selection import train_test_split
@@ -35,7 +36,7 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 def main(refit=False, plot_egs=False, cv_scores=False):
     Explore_Data(print_stats=False, show_ims=False)
-    train_inst = Load_Data('train', repickle=False)
+    train_inst = Load_Data('train', repickle=True)
     data_X, data_y = train_inst.data_X, train_inst.data_y
 
     train_X, cv_X, train_y, cv_y = train_test_split(
@@ -47,19 +48,20 @@ def main(refit=False, plot_egs=False, cv_scores=False):
 #    mod_fpath = os.path.join(CDIR, 'model1.h5')
     mod_fpath = '.mdl_wts.hdf5'
     model = modelling(train_X[0].shape)
+    print(model.summary())
     if refit or not os.path.exists(mod_fpath):
-        earlyStopping = EarlyStopping(monitor='val_loss', patience=10,
+        earlyStopping = EarlyStopping(monitor='val_loss', patience=6,
                                       verbose=0, mode='min')
         mcp_save = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True,
                                    monitor='val_loss', mode='min')
         reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1,
-                                           patience=7, verbose=1, epsilon=1e-4,
+                                           patience=2, verbose=1, epsilon=1e-4,
                                            mode='min')
         model.fit(train_X[:, :, :, :], train_y[:, :], epochs=30, verbose=1,
                   batch_size=32,
                   callbacks=[earlyStopping, mcp_save, reduce_lr_loss],
                   validation_data=(cv_X, cv_y))
-    model.load_weights(filepath=mod_fpath, by_name=True)
+    model.load_weights(filepath=mod_fpath)
 
     if plot_egs:
         for i in range(10):
@@ -74,7 +76,7 @@ def main(refit=False, plot_egs=False, cv_scores=False):
 
 def prepare_submission(model):
     print("Preparing submission")
-    test_inst = Load_Data('test', repickle=False)
+    test_inst = Load_Data('test', repickle=True)
     test_data = test_inst.data
     test_data = test_data / 255
     sample_sub = pd.read_csv(os.path.join(CDIR, 'sample_submission.csv'))
@@ -117,27 +119,27 @@ def modelling(shape):
     model.add(Conv2D(32, (3, 3), input_shape=shape))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
+    model.add(Activation('relu'))
     model.add(Conv2D(32, (3, 3)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Dropout(0.5))
+
+    model.add(Conv2D(64, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
-    model.add(Conv2D(32, (3, 3)))
+    model.add(Conv2D(64, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.5))
-
-#    model.add(Conv2D(32, (3, 3)))
-#    model.add(Activation('relu'))
-#    model.add(MaxPooling2D(pool_size=(2, 2)))
-#    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     model.add(Flatten())
     model.add(Dense(64))
     model.add(Activation('relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
     model.add(Dense(10))
     model.add(Activation('softmax'))
 
@@ -214,7 +216,7 @@ class Load_Data(object):
     @staticmethod
     def compress_im(im):
         gs_im = im.convert(mode='L')
-        gs_im.thumbnail((128, 128))
+        gs_im.thumbnail((200, 200))
         return gs_im
 
 
