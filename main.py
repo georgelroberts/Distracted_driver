@@ -15,6 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 import matplotlib.image as mpimg
+import pdb
 from PIL import Image
 import pickle
 from sklearn.model_selection import train_test_split
@@ -35,6 +36,7 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 def main(refit=False, plot_egs=False, cv_scores=False):
     Explore_Data(print_stats=False, show_ims=False)
+
     load_and_fit(refit, plot_egs, cv_scores)
 
 
@@ -122,7 +124,12 @@ def modelling(shape):
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.5))
 
+    model.add(Activation('relu'))
     model.add(Conv2D(32, (3, 3)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
+
+    model.add(Conv2D(64, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.5))
