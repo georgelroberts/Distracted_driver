@@ -9,6 +9,7 @@ TODO: Build a dataframe/text document to log all previous scores
 '''
 
 import os
+import shutil
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -25,9 +26,9 @@ from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import load_model
 from keras.optimizers import SGD
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-from fastai import *
-from fastai.vision import *
-from fastai.core import *
+# from fastai import *
+# from fastai.vision import *
+# from fastai.core import *
 
 import ujson
 from sklearn.metrics import log_loss, accuracy_score
@@ -56,12 +57,14 @@ def create_val_folder():
     val_path = os.path.join(CDIR, 'data', 'valid')
     if os.path.exists(val_path):
         return
-    else:
-        os.makedirs(val_path)
-        for i in np.linspace(0, 9, 10).astype(int):
-            os.makedirs(os.path.join(val_path, 'c{}'.format(i)))
-
-
+    os.makedirs(val_path)
+    for i in np.linspace(0, 9, 10).astype(int):
+        os.makedirs(os.path.join(val_path, 'c{}'.format(i)))
+    cv_ims =  driver_df[driver_df['subject'].isin(cv_subj)]
+    for cls, im_path in zip(cv_ims['classname'], cv_ims['img']):
+        orig = os.path.join(CDIR, 'data', 'train', cls, im_path)
+        new = os.path.join(CDIR, 'data', 'valid', cls, im_path)
+        shutil.move(orig, new)
 
 
 def load_and_fit(refit, plot_egs, cv_scores):
