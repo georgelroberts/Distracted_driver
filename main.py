@@ -25,6 +25,9 @@ from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import load_model
 from keras.optimizers import SGD
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from fastai import *
+from fastai.vision import *
+from fastai.core import *
 
 import ujson
 from sklearn.metrics import log_loss, accuracy_score
@@ -35,9 +38,30 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 
 def main(refit=False, plot_egs=False, cv_scores=False):
-    Explore_Data(print_stats=False, show_ims=False)
+    # data = ImageDataBunch.from_folder('data', test='test', size=224)
+    # learn = cnn_learner(data, models.resnet34, metrics=accuracy)
+    # learn.fit_one_cycle(1, 1e-2)
+    # Explore_Data(print_stats=False, show_ims=False)
+    # load_and_fit(refit, plot_egs, cv_scores)
+    create_val_folder()
 
-    load_and_fit(refit, plot_egs, cv_scores)
+
+def create_val_folder():
+    driver_imgs_path = os.path.join(CDIR, 'driver_imgs_list.csv')
+    driver_df = pd.read_csv(driver_imgs_path)
+    unique_drivers = driver_df.subject.unique()
+    np.random.seed(42)
+    cv_subj = np.random.choice(unique_drivers, int(len(unique_drivers)/4))
+    train_subj = [x for x in unique_drivers if x not in cv_subj]
+    val_path = os.path.join(CDIR, 'data', 'valid')
+    if os.path.exists(val_path):
+        return
+    else:
+        os.makedirs(val_path)
+        for i in np.linspace(0, 9, 10).astype(int):
+            os.makedirs(os.path.join(val_path, 'c{}'.format(i)))
+
+
 
 
 def load_and_fit(refit, plot_egs, cv_scores):
