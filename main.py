@@ -35,6 +35,10 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 def main(refit=False, plot_egs=False, cv_scores=False):
     Explore_Data(print_stats=False, show_ims=False)
+    load_and_fit(refit, plot_egs, cv_scores)
+
+
+def load_and_fit(refit, plot_egs, cv_scores):
     train_inst = Load_Data('train', repickle=False)
     data_X, data_y = train_inst.data_X, train_inst.data_y
 
@@ -44,22 +48,21 @@ def main(refit=False, plot_egs=False, cv_scores=False):
     cv_X = cv_X / 255
 
     del data_X, data_y
-#    mod_fpath = os.path.join(CDIR, 'model1.h5')
     mod_fpath = '.mdl_wts.hdf5'
     model = modelling(train_X[0].shape)
     if refit or not os.path.exists(mod_fpath):
-        earlyStopping = EarlyStopping(monitor='val_loss', patience=10,
+        earlyStopping = EarlyStopping(monitor='val_loss', patience=6,
                                       verbose=0, mode='min')
         mcp_save = ModelCheckpoint('.mdl_wts.hdf5', save_best_only=True,
                                    monitor='val_loss', mode='min')
-        reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1,
-                                           patience=7, verbose=1, epsilon=1e-4,
+        reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                                           patience=2, verbose=1, epsilon=1e-4,
                                            mode='min')
-        model.fit(train_X[:, :, :, :], train_y[:, :], epochs=30, verbose=1,
+        model.fit(train_X[:, :, :, :], train_y[:, :], epochs=100, verbose=1,
                   batch_size=32,
                   callbacks=[earlyStopping, mcp_save, reduce_lr_loss],
                   validation_data=(cv_X, cv_y))
-    model.load_weights(filepath=mod_fpath, by_name=True)
+    model.load_weights(filepath=mod_fpath)
 
     if plot_egs:
         for i in range(10):
@@ -129,10 +132,10 @@ def modelling(shape):
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.5))
 
-#    model.add(Conv2D(32, (3, 3)))
-#    model.add(Activation('relu'))
-#    model.add(MaxPooling2D(pool_size=(2, 2)))
-#    model.add(Dropout(0.5))
+    model.add(Conv2D(32, (3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.5))
 
     model.add(Flatten())
     model.add(Dense(64))
@@ -174,6 +177,7 @@ class Load_Data(object):
 
         elif self.dataset == 'test':
             test_lst = os.listdir(os.path.join(DATA_DIR, 'test'))
+            test_lst.sort()
             no_test = len(test_lst)
             for ii, test_file in enumerate(test_lst):
                 if ii % 500 == 0:
@@ -268,4 +272,4 @@ class Explore_Data(object):
 
 
 if __name__ == '__main__':
-    main(refit=True, plot_egs=False)
+    main(refit=True, plot_egs=False, cv_scores=False)
