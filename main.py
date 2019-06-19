@@ -26,9 +26,9 @@ from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import load_model
 from keras.optimizers import SGD
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
-# from fastai import *
-# from fastai.vision import *
-# from fastai.core import *
+from fastai import *
+from fastai.vision import *
+from fastai.core import *
 
 import ujson
 from sklearn.metrics import log_loss, accuracy_score
@@ -39,12 +39,32 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 
 def main(refit=False, plot_egs=False, cv_scores=False):
-    # data = ImageDataBunch.from_folder('data', test='test', size=224)
-    # learn = cnn_learner(data, models.resnet34, metrics=accuracy)
-    # learn.fit_one_cycle(1, 1e-2)
+    data = ImageDataBunch.from_folder('data',
+                                      test='test',
+                                      valid='valid',
+                                      ds_tfms=get_transforms(),
+                                      size=224).normalize()
+    learn = cnn_learner(data, models.resnet18, metrics=accuracy)
+    learn.fit(4)
+    # preds,y,losses = learn.get_preds(with_loss=True)
+    # interp = ClassificationInterpretation(data, preds, y, losses)
+    # interp.plot_top_losses(9, figsize=(10,10))
+    # plt.show()
+    # interp.plot_confusion_matrix()
+    # plt.show()
+    learn.unfreeze()
+    learn.fit(2)
+    learn.recorder.plot_lr(show_moms=True)
+    plt.show()
+    # preds,y = learn.get_preds()
+    # interp = ClassificationInterpretation(data, preds, y)
+    # interp.plot_top_losses(9, figsize=(10,10))
+    # plt.show()
+    # interp.plot_confusion_matrix()
+    # plt.show()
     # Explore_Data(print_stats=False, show_ims=False)
     # load_and_fit(refit, plot_egs, cv_scores)
-    create_val_folder()
+    # create_val_folder()
 
 
 def create_val_folder():
