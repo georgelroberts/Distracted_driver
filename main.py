@@ -39,37 +39,34 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 
 def main(refit=False, plot_egs=False, cv_scores=False):
+    # create_val_folder()
     data = ImageDataBunch.from_folder('data',
                                       test='test',
                                       valid='valid',
                                       ds_tfms=get_transforms(),
                                       size=224).normalize()
+    mod_fname = 'fastai_model'
+    mod_fpath = os.path.join(CDIR, 'data', 'models', '{}.pth'.format(mod_fname))
     learn = cnn_learner(data, models.resnet34, metrics=accuracy)
-    # learn.fit(1, 1e-2)
-    learn.fit_one_cycle(3)
-    # preds,y,losses = learn.get_preds(with_loss=True)
+    if refit or not os.path.exists(mod_fpath):
+        learn.fit_one_cycle(3)
+        learn.unfreeze()
+        # learn.lr_find()
+        # learn.recorder.plot(suggestion=True)
+        # plt.show()
+        # learn.fit_one_cycle(2, max_lr=slice(1e-6,1e-4))
+        learn.fit_one_cycle(6, 4e-6)
+        learn.save(mod_fname)
 
-    # interp = ClassificationInterpretation(learn, preds, y, losses)
-    # interp.plot_top_losses(9, figsize=(10,10))
-    # interp.plot_confusion_matrix()
-    # plt.show()
+        # learn.recorder.plot_lr(show_moms=True)
+        # preds,y,losses = learn.get_preds(with_loss=True)
+        # interp = ClassificationInterpretation(learn, preds, y, losses)
+        # interp.plot_top_losses(9, figsize=(10,10))
+        # interp.plot_confusion_matrix()
+        # plt.show()
+    else:
+        learn = learn.load(mod_fname)
 
-    learn.unfreeze()
-    # learn.lr_find()
-    # learn.recorder.plot(suggestion=True)
-    # plt.show()
-    # learn.fit_one_cycle(2, max_lr=slice(1e-6,1e-4))
-    learn.fit_one_cycle(6, 4e-6)
-
-    # learn.recorder.plot_lr(show_moms=True)
-    # preds,y,losses = learn.get_preds(with_loss=True)
-    # interp = ClassificationInterpretation(learn, preds, y, losses)
-    # interp.plot_top_losses(9, figsize=(10,10))
-    # interp.plot_confusion_matrix()
-    # plt.show()
-    # Explore_Data(print_stats=False, show_ims=False)
-    # load_and_fit(refit, plot_egs, cv_scores)
-    # create_val_folder()
 
 
 def create_val_folder():
@@ -331,4 +328,4 @@ class Explore_Data(object):
 
 
 if __name__ == '__main__':
-    main(refit=True, plot_egs=False, cv_scores=False)
+    main(refit=False, plot_egs=False, cv_scores=False)
