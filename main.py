@@ -40,6 +40,14 @@ DATA_DIR = os.path.join(CDIR, 'data')
 
 def main(refit=False, plot_egs=False, cv_scores=False):
     # create_val_folder()
+    fastai_fit(refit)
+    with open(os.path.join(CDIR, 'saved_res.pkl'), 'rb') as f:
+        preds = pickle.load(f)
+    preds = preds[0].data.numpy()
+    prepare_submission(preds, fastai=True)
+
+
+def fastai_fit(refit):
     data = ImageDataBunch.from_folder('data',
                                       test='test',
                                       valid='valid',
@@ -55,7 +63,7 @@ def main(refit=False, plot_egs=False, cv_scores=False):
         # learn.recorder.plot(suggestion=True)
         # plt.show()
         # learn.fit_one_cycle(2, max_lr=slice(1e-6,1e-4))
-        learn.fit_one_cycle(6, 4e-6)
+        learn.fit_one_cycle(6, max_lr=slice(1e-6, 1e-4))
         learn.save(mod_fname)
 
         # learn.recorder.plot_lr(show_moms=True)
@@ -66,7 +74,9 @@ def main(refit=False, plot_egs=False, cv_scores=False):
         # plt.show()
     else:
         learn = learn.load(mod_fname)
-
+    preds = learn.get_preds(ds_type=DatasetType.Test)
+    with open(os.path.join(CDIR, 'saved_res.pkl'), 'wb') as f:
+        pickle.dump(preds, f, protocol=2)
 
 
 def create_val_folder():
@@ -123,19 +133,24 @@ def load_and_fit(refit, plot_egs, cv_scores):
         pred_log_loss, pred_accuracy = cv_score(model, cv_X, cv_y)
         print("CV log loss: {:.3f}\nCV accuracy: {:.3f}".format(pred_log_loss,
                                                                 pred_accuracy))
-    prepare_submission(model)
-
-
-def prepare_submission(model):
-    print("Preparing submission")
     test_inst = Load_Data('test', repickle=False)
     test_data = test_inst.data
     test_data = test_data / 255
-    sample_sub = pd.read_csv(os.path.join(CDIR, 'sample_submission.csv'))
     preds = model.predict(test_data)
+    prepare_submission(preds)
+
+
+def prepare_submission(preds, fastai=False):
+    print("Preparing submission")
+    if fastai:
+        idxs = os.listdir(os.path.join(DATA_DIR, 'test'))
+    else:
+        sample_sub = pd.read_csv(os.path.join(CDIR, 'sample_submission.csv'))
+        idxs = sample_sub['img']
     sub = pd.DataFrame(data=preds,
-                       index=sample_sub['img'],
+                       index=idxs,
                        columns=['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'])
+    sub.index.name = 'img'
     sub.reset_index(inplace=True)
     sub.to_csv(os.path.join(CDIR, 'real_sub.csv'), index=False)
 
