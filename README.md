@@ -6,7 +6,9 @@ Two approaches have been attempted. One cold start CNN, which gave an OK perform
 
 ## Getting Started
 
-All functions and classes are currently contained within main.py. By default, running the file will use fastAI and pretrained weights, although the class Explore_Data can be used for some basic EDA.
+First, the data should be downloaded into the data folder found in the kaggle link about. After this is complete, running state_farm_main_fit.py using python3.6 will run a fastai model (using transfer learning from ReseNet34) to fit the data and create a predictions folder. 
+
+The package requirements can be found in requirements.txt
 
 ## Authors
 
