@@ -22,34 +22,79 @@ import ujson
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 from keras.models import load_model
 from keras.optimizers import SGD
 from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from keras.applications.inception_v3 import InceptionV3, preprocess_input
+from keras.preprocessing.image import ImageDataGenerator
 from fastai import *
 from fastai.vision import *
 from fastai.core import *
 from sklearn.metrics import log_loss, accuracy_score
 
-from load_data import Load_Data
+from load_data import Load_Data, CDIR, DATA_DIR, MODEL_DIR, RES_DIR
 from explore_data import Explore_Data
 
 matplotlib.rcParams['figure.dpi'] = 200
 
-CDIR = os.path.abspath(os.path.dirname(__file__))
-DATA_DIR = os.path.join(CDIR, 'data')
-MODEL_DIR = os.path.join(CDIR, 'saved_models')
-RES_DIR = os.path.join(CDIR, 'results')
 
 
 def main(refit=False, plot_egs=False, cv_scores=False):
+    keras_inception_transfer()
     # create_val_folder()
-    fastai_fit(refit)
-    with open(os.path.join(RES_DIR, 'saved_res.pkl'), 'rb') as f:
-        preds = pickle.load(f)
-    preds = preds[0].data.numpy()
-    prepare_submission(preds, fastai=True)
+
+    # fastai_fit(refit)
+    # with open(os.path.join(RES_DIR, 'saved_res.pkl'), 'rb') as f:
+    #     preds = pickle.load(f)
+    # preds = preds[0].data.numpy()
+    # prepare_submission(preds, fastai=True)
+
+def keras_inception_transfer():
+    train_inst = Load_Data('train', repickle=False)
+    data_X, data_y = train_inst.data_X, train_inst.data_y
+
+    data_gen = ImageDataGenerator(vertical_flip=True,
+            horizontal_flip=True, height_shift_range=0.1,
+            width_shift_range=0.1, preprocessing_function=preprocess_input,
+            validation_split=0.2)
+    data_gen.fit(data_X)
+    batch_size = 32
+    train_data_gen = data_gen.flow(data_X, data_y, batch_size=batch_size,
+            subset='training')
+    valid_data_gen = data_gen.flow(data_X, data_y, batch_size=batch_size,
+            subset='validation')
+
+    model = InceptionV3(weights='imagenet', include_top=False,
+            input_shape=data_X[0].shape)
+    model.trainable = False
+    new_model = Sequential()
+    new_model.add(model)
+    new_model.add(GlobalAveragePooling2D())
+    new_model.add(Dropout(0.5))
+    new_model.add(Dense(10, activation='softmax'))
+
+    new_model.compile(loss='categorical_crossentropy',
+                      optimizer='adam',
+                      metrics=['accuracy'])
+
+    new_model.fit_generator(train_data_gen, epochs=20,
+            # steps_per_epoch=train_data_gen // batch_size, 
+            validation_data=valid_data_gen,
+            # validation_steps=valid_data_gen.samples // batch_size,
+            verbose=True)
+
+    new_model.trainable=True
+    new_model.compile(loss='categorical_crossentropy',
+                      optimizer='adam',
+                      metrics=['accuracy'])
+
+    new_model.fit_generator(train_data_gen, epochs=20,
+            # steps_per_epoch=train_data_gen // batch_size, 
+            validation_data=valid_data_gen,
+            # validation_steps=valid_data_gen.samples // batch_size,
+            verbose=True)
 
 
 def fastai_fit(refit):

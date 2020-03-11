@@ -6,6 +6,18 @@ About: Load/manipulate data from way presented in kaggle
 
 '''
 
+import os
+import pickle
+import numpy as np
+import pdb
+from PIL import Image
+
+
+CDIR = os.path.abspath(os.path.dirname(__file__))
+DATA_DIR = os.path.join(CDIR, 'data')
+MODEL_DIR = os.path.join(CDIR, 'saved_models')
+RES_DIR = os.path.join(CDIR, 'results')
+
 class Load_Data(object):
     def __init__(self, data, repickle=False):
         self.dataset = data
@@ -57,11 +69,11 @@ class Load_Data(object):
             self.data_X = np.array(list(self.data[:, 0]))
             self.data_y = np.array(list(self.data[:, 1]))
             shape_X = list(self.data_X.shape)
-            shape_X.append(1)
+            # shape_X.append(1)
             self.data_X = self.data_X.reshape(shape_X)
         else:
             shape_X = list(self.data.shape)
-            shape_X.append(1)
+            # shape_X.append(1)
             self.data = self.data.reshape(shape_X)
 
     @staticmethod
@@ -73,8 +85,8 @@ class Load_Data(object):
 
     @staticmethod
     def compress_im(im):
-        gs_im = im.convert(mode='L')
-        gs_im.thumbnail((128, 128))
-        return gs_im
+        # gs_im = im.convert(mode='L')
+        im.thumbnail((256, 256, 3))
+        return im
 
 
