@@ -71,13 +71,15 @@ def keras_inception_transfer():
 
     model = InceptionV3(weights='imagenet', include_top=False,
             input_shape=data_X[0].shape)
-    model.trainable = False
+    model.trainable = True
     new_model = Sequential()
     new_model.add(model)
     new_model.add(GlobalAveragePooling2D())
     new_model.add(Dropout(0.5))
+    new_model.add(Dense(1000, activation='relu'))
+    new_model.add(Dropout(0.5))
     new_model.add(Dense(10, activation='softmax'))
-    sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True)
 
     new_model.compile(loss='categorical_crossentropy',
                       optimizer=sgd,
