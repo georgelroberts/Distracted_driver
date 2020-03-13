@@ -11,6 +11,7 @@ import pickle
 import numpy as np
 import pdb
 from PIL import Image
+from keras.utils import np_utils
 
 
 CDIR = os.path.abspath(os.path.dirname(__file__))
@@ -49,14 +50,14 @@ class Load_Data(object):
             no_test = len(test_lst)
             for ii, test_file in enumerate(test_lst):
                 if ii % 500 == 0:
-                    print("{(ii / no_test * 100):.1f}% complete")
+                    print(f"{(ii / no_test * 100):.1f}% complete")
                 fpath = os.path.join(DATA_DIR, 'test', test_file)
                 im = Image.open(fpath)
                 im = self.compress_im(im)
                 self.data.append(np.array(im))
         self.data = np.array(self.data)
         with open(self.file, 'wb') as f:
-            pickle.dump(self.data, f, protocol=2)
+            pickle.dump(self.data, f, protocol=4)
 
     def load_input(self):
         with open(self.file, 'rb') as f:
@@ -68,9 +69,10 @@ class Load_Data(object):
             np.random.shuffle(self.data)
             self.data_X = np.array(list(self.data[:, 0]))
             self.data_y = np.array(list(self.data[:, 1]))
-            shape_X = list(self.data_X.shape)
+            # self.data_y = np_utils.to_categorical(self.data_y, 10)
+            # shape_X = list(self.data_X.shape)
             # shape_X.append(1)
-            self.data_X = self.data_X.reshape(shape_X)
+            # self.data_X = self.data_X.reshape(shape_X)
         else:
             shape_X = list(self.data.shape)
             # shape_X.append(1)
@@ -86,7 +88,7 @@ class Load_Data(object):
     @staticmethod
     def compress_im(im):
         # gs_im = im.convert(mode='L')
-        im.thumbnail((256, 256, 3))
+        im.thumbnail((156, 156, 3))
         return im
 
 

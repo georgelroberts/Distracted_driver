@@ -52,12 +52,15 @@ def main(refit=False, plot_egs=False, cv_scores=False):
     # prepare_submission(preds, fastai=True)
 
 def keras_inception_transfer():
-    train_inst = Load_Data('train', repickle=False)
+    train_inst = Load_Data('train', repickle=True)
     data_X, data_y = train_inst.data_X, train_inst.data_y
+    data_X = data_X / 255.
 
     data_gen = ImageDataGenerator(vertical_flip=True,
             horizontal_flip=True, height_shift_range=0.1,
+            shear_range=0.1, zoom_range=0.1,
             width_shift_range=0.1, preprocessing_function=preprocess_input,
+            samplewise_center=True, samplewise_std_normalization=True,
             validation_split=0.2)
     data_gen.fit(data_X)
     batch_size = 32
@@ -74,20 +77,10 @@ def keras_inception_transfer():
     new_model.add(GlobalAveragePooling2D())
     new_model.add(Dropout(0.5))
     new_model.add(Dense(10, activation='softmax'))
+    sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
 
     new_model.compile(loss='categorical_crossentropy',
-                      optimizer='adam',
-                      metrics=['accuracy'])
-
-    new_model.fit_generator(train_data_gen, epochs=20,
-            # steps_per_epoch=train_data_gen // batch_size, 
-            validation_data=valid_data_gen,
-            # validation_steps=valid_data_gen.samples // batch_size,
-            verbose=True)
-
-    new_model.trainable=True
-    new_model.compile(loss='categorical_crossentropy',
-                      optimizer='adam',
+                      optimizer=sgd,
                       metrics=['accuracy'])
 
     new_model.fit_generator(train_data_gen, epochs=20,
