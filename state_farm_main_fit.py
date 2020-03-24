@@ -42,54 +42,62 @@ matplotlib.rcParams['figure.dpi'] = 200
 
 
 def main(refit=False, plot_egs=False, cv_scores=False):
-    keras_inception_transfer()
     # create_val_folder()
+    keras_inception_transfer()
 
-    # fastai_fit(refit)
-    # with open(os.path.join(RES_DIR, 'saved_res.pkl'), 'rb') as f:
-    #     preds = pickle.load(f)
-    # preds = preds[0].data.numpy()
-    # prepare_submission(preds, fastai=True)
 
 def keras_inception_transfer():
-    train_inst = Load_Data('train', repickle=True)
-    data_X, data_y = train_inst.data_X, train_inst.data_y
-    data_X = data_X / 255.
-
-    data_gen = ImageDataGenerator(vertical_flip=True,
+    train_gen = ImageDataGenerator(
+            vertical_flip=True,
             horizontal_flip=True, height_shift_range=0.1,
             shear_range=0.1, zoom_range=0.1,
             width_shift_range=0.1, preprocessing_function=preprocess_input,
-            samplewise_center=True, samplewise_std_normalization=True,
-            validation_split=0.2)
-    data_gen.fit(data_X)
-    batch_size = 32
-    train_data_gen = data_gen.flow(data_X, data_y, batch_size=batch_size,
-            subset='training')
-    valid_data_gen = data_gen.flow(data_X, data_y, batch_size=batch_size,
-            subset='validation')
+            samplewise_center=True, samplewise_std_normalization=True)
+    valid_gen = ImageDataGenerator(
+            preprocessing_function=preprocess_input,
+            samplewise_center=True, samplewise_std_normalization=True)
+
+    batch_size = 16
+    train_data_gen = train_gen.flow_from_directory('data/train', batch_size=batch_size,
+            target_size=(299, 299))
+    valid_data_gen = valid_gen.flow_from_directory('data/valid', batch_size=batch_size,
+            target_size=(299, 299))
 
     model = InceptionV3(weights='imagenet', include_top=False,
-            input_shape=data_X[0].shape)
+            input_shape=(299, 299, 3))
     model.trainable = True
     new_model = Sequential()
     new_model.add(model)
     new_model.add(GlobalAveragePooling2D())
     new_model.add(Dropout(0.5))
     new_model.add(Dense(1000, activation='relu'))
-    new_model.add(Dropout(0.5))
     new_model.add(Dense(10, activation='softmax'))
-    sgd = SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(lr=1e-3, decay=1e-6, momentum=0.9, nesterov=True)
 
     new_model.compile(loss='categorical_crossentropy',
                       optimizer=sgd,
                       metrics=['accuracy'])
+    print(new_model.summary())
+    refit = True
+    mod_fpath = os.path.join(MODEL_DIR, '.mdl_wts2.hdf5')
+    if refit or not os.path.exists(mod_fpath):
+        earlyStopping = EarlyStopping(monitor='val_loss', patience=4,
+                verbose=1, mode='min')
+        mcp_save = ModelCheckpoint(mod_fpath, save_best_only=True,
+                monitor='val_loss', mode='min')
+        reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.2,
+                patience=2, verbose=1, mode='min')
 
-    new_model.fit_generator(train_data_gen, epochs=20,
-            # steps_per_epoch=train_data_gen // batch_size, 
-            validation_data=valid_data_gen,
-            # validation_steps=valid_data_gen.samples // batch_size,
-            verbose=True)
+        new_model.fit_generator(train_data_gen, epochs=20,
+                validation_data=valid_data_gen,
+                callbacks=[earlyStopping, mcp_save, reduce_lr_loss],
+                verbose=True)
+    else:
+        new_model.load_weights(mod_fpath)
+    test_data_gen = valid_gen.flow_from_directory('data/test', batch_size=batch_size,
+            target_size=(299, 299))
+    preds = new_model.predict_generator(test_data_gen, verbose=1)
+    prepare_submission(preds)
 
 
 def fastai_fit(refit):
