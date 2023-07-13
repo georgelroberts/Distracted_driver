@@ -125,7 +125,7 @@ def create_val_folder():
     driver_df = pd.read_csv(driver_imgs_path)
     unique_drivers = driver_df.subject.unique()
     np.random.seed(42)
-    cv_subj = np.random.choice(unique_drivers, int(len(unique_drivers)/4))
+    cv_subj = np.random.choice(unique_drivers, len(unique_drivers) // 4)
     train_subj = [x for x in unique_drivers if x not in cv_subj]
     val_path = os.path.join(DATA_DIR, 'valid')
     if os.path.exists(val_path):
@@ -167,7 +167,7 @@ def load_and_fit(refit, plot_egs, cv_scores):
     model.load_weights(filepath=mod_fpath)
 
     if plot_egs:
-        for i in range(10):
+        for _ in range(10):
             show_example_prediction(model, cv_X, cv_y)
 
     if cv_scores:
